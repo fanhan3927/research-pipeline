@@ -187,6 +187,25 @@ python scripts/audit_log.py append <project_dir> --actor user \
 
 ## 两链衔接（PRD 6.4，反向）
 
-步骤 6 算出的退出估值，要回填进这个项目在分发链里的 `03_pipeline/Pipeline_内部版.xlsx`
-的"退出估值"列（如果该项目之前走过分发链、已经有这份文件的话）。**入场价格上限任何情况下
-都不允许写入 Pipeline 的任何版本**——这条和分发链编排层的规则一致，两边都要遵守。
+如果这个项目之前走过分发链、`03_pipeline/Pipeline_内部版.xlsx` 已经存在，步骤 6 算出退出
+估值后就跑：
+
+```
+python scripts/backfill_exit_valuation.py \
+  --pipeline <project_dir>/03_pipeline/Pipeline_内部版.xlsx \
+  --project-name "<项目名称，须与 Pipeline 里完全一致>" \
+  --exit-valuation "<退出估值区间+口径>" \
+  --project-dir <project_dir>
+```
+
+这个脚本会自动：回填内部版的"退出估值"列、重新生成一份对外版、在 audit_log.md 里补一条
+"发送前检查清单（退出估值更新后）"的人工确认记录——**提醒用户这份新生成的对外版也要重新走
+一遍发送前检查，不能因为之前检查过旧版本就直接发新版本**。
+
+如果该项目还没走过分发链、没有 `Pipeline_内部版.xlsx`，这一步跳过，等以后启动分发链时
+`pipeline-intake` 会正常处理这个字段（缺了就标 missing，不用现在纠结）。
+
+**入场价格上限任何情况下都不允许写入 Pipeline 的任何版本**——这条和分发链编排层的规则
+一致，两边都要遵守。`backfill_exit_valuation.py` 从设计上就只能写"退出估值"这一个字段，
+没有提供写入其他字段（包括入场价格上限）的参数，不要绕开这个脚本去手工把估值报告里的
+入场价格上限抄进 Pipeline。

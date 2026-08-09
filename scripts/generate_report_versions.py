@@ -38,21 +38,12 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from audit_log import append_entry  # noqa: E402
+from banned_keywords import REPORT_KEYWORDS, scan_text  # noqa: E402
 
 EXCLUDE_BLOCK_RE = re.compile(
     r"<!--\s*external:exclude\s*-->.*?<!--\s*/external:exclude\s*-->\n?",
     re.DOTALL,
 )
-
-# 未被 <!-- external:exclude --> 标记覆盖时的兜底关键词扫描
-# 命中不阻塞生成，只在人工确认节点提示复核（对应发送前检查）
-BANNED_KEYWORDS = [
-    "入场价格上限", "IRR 反推", "目标IRR", "目标 IRR",
-    "go/no-go", "Go/No-Go", "内部定级", "A/B/C 定级",
-    "M1", "M2", "M3", "M4",  # 材料可信度分级标注不应出现在对外版
-    "冲突所在",
-    "管理费", "Carry", "顾问费", "压价",
-]
 
 KIND_LABELS = {"report": "研究报告", "deck": "PPT大纲"}
 
@@ -76,11 +67,10 @@ def sanitize_markdown(text: str) -> tuple[str, list[str]]:
     _check_balanced_markers(text)
     external_text = EXCLUDE_BLOCK_RE.sub("", text)
 
-    warnings: list[str] = []
-    for line_no, line in enumerate(external_text.splitlines(), start=1):
-        for kw in BANNED_KEYWORDS:
-            if kw in line:
-                warnings.append(f"第 {line_no} 行命中关键词「{kw}」：{line.strip()[:60]}")
+    warnings = [
+        f"第 {line_no} 行命中关键词「{kw}」：{line[:60]}"
+        for line_no, kw, line in scan_text(external_text, REPORT_KEYWORDS)
+    ]
     return external_text, warnings
 
 

@@ -25,7 +25,7 @@ Automated research pipeline: PRD → Distribution Excel / R&amp;D PDF+PPT
 
 ## 当前阶段
 
-PRD 已确认（见 `docs/PRD.md`），Phase 1（分发链编排层骨架）、Phase 2（研发链编排层骨架）已搭建。
+PRD 已确认（见 `docs/PRD.md`），Phase 1（分发链）、Phase 2（研发链）、Phase 3（两链衔接细节）骨架已搭建。
 
 ## 依赖
 
@@ -47,8 +47,11 @@ research-pipeline/
 ├── scripts/
 │   ├── audit_log.py                  # 项目操作日志（可追溯性基础设施）
 │   ├── init_project.py               # 项目归档骨架初始化/跨链扩展
+│   ├── banned_keywords.py            # 两条链共用的发送前兜底关键词表
+│   ├── project_status.py             # 查看项目进度（目录完成情况+历史暂停记录）
 │   ├── make_external_pipeline.py     # 分发链：Pipeline 内部版 → 对外版
-│   └── generate_report_versions.py   # 研发链：研究报告/PPT大纲 → 内部版+对外版
+│   ├── generate_report_versions.py   # 研发链：研究报告/PPT大纲 → 内部版+对外版
+│   └── backfill_exit_valuation.py    # 两链衔接：退出估值回填 Pipeline + 自动重生对外版
 ├── projects/                         # 各项目的归档目录（默认不入库，见 .gitignore）
 └── requirements.txt
 ```
@@ -84,5 +87,18 @@ python scripts/generate_report_versions.py \
   --output-dir projects/示例项目_20260809/07_report \
   --kind report \
   --project-dir projects/示例项目_20260809
+
+# 4. 算完退出估值后，回填进该项目的 Pipeline（如果之前走过分发链）
+python scripts/backfill_exit_valuation.py \
+  --pipeline projects/示例项目_20260809/03_pipeline/Pipeline_内部版.xlsx \
+  --project-name "示例项目" \
+  --exit-valuation "80-95亿元（2027年科创板，按可比公司PS均值测算）" \
+  --project-dir projects/示例项目_20260809
+```
+
+## 查看项目进度
+
+```bash
+python scripts/project_status.py --project-dir projects/示例项目_20260809
 ```
 

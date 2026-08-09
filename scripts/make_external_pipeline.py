@@ -23,6 +23,7 @@ from openpyxl.worksheet.worksheet import Worksheet
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from audit_log import append_entry  # noqa: E402
+from banned_keywords import PIPELINE_KEYWORDS, scan_value  # noqa: E402
 
 # 对外版白名单：14 个字段，顺序即对外版列顺序（对应 Pipeline A-N 列）
 EXTERNAL_WHITELIST = [
@@ -57,11 +58,11 @@ INTERNAL_BLACKLIST = [
     "内部备注",
 ]
 
-# 发送前关键词兜底扫描（对应手册「发送前的最后检查」+ PRD 第七节）
-BANNED_KEYWORDS = [
-    "管理费", "Carry", "顾问费", "撮合",
-    "急", "压力", "到期", "没卖出去",
-]
+# 研判链的「入场价格上限」是议价底牌，无论叫什么名字都绝不能进 Pipeline 任何版本。
+# 这个字段本来就不在白名单里，天然会被排除；这里额外做一次显式检测只是为了让这条
+# 硬规则「可见」——如果真的有人把它加进了内部版 Excel，生成对外版时要明确提醒一句，
+# 而不是悄无声息地漏过去。
+ENTRY_PRICE_CAP_HEADER_HINTS = ["入场价格上限", "价格上限", "议价底价", "谈判底线"]
 
 # 名字里含这些词的工作表一律不进对外版（内部说明页、笔记页等）
 SHEET_NAME_BLOCKLIST_SUBSTRINGS = ["内部", "说明", "笔记", "备注", "草稿"]
@@ -91,8 +92,12 @@ def _header_row(ws: Worksheet) -> dict[str, int]:
     return headers
 
 
-def convert(input_path: Path, output_path: Path) -> list[str]:
-    """执行转换，返回兜底关键词扫描命中的警告列表（不阻塞生成，仅供人工复核）。"""
+def convert(input_path: Path, output_path: Path) -> tuple[list[str], list[str]]:
+    """执行转换，返回 (关键词扫描警告, 结构性提醒)。
+
+    两者都不阻塞生成、只供人工复核：前者是内容里可能漏删的敏感词，
+    后者是"检测到内部版里有入场价格上限这类字段，已被白名单排除"的确认性提醒。
+    """
     wb = openpyxl.load_workbook(input_path)
     src_ws = _find_source_sheet(wb)
     headers = _header_row(src_ws)
@@ -102,6 +107,16 @@ def convert(input_path: Path, output_path: Path) -> list[str]:
         raise PipelineFormatError(
             f"内部版缺少以下白名单字段，无法生成对外版：{missing}"
         )
+
+    notices: list[str] = []
+    for header_text in headers:
+        if header_text in EXTERNAL_WHITELIST:
+            continue
+        if any(hint in header_text for hint in ENTRY_PRICE_CAP_HEADER_HINTS):
+            notices.append(
+                f"内部版存在字段「{header_text}」，疑似入场价格上限/议价底牌类信息，"
+                "已按白名单机制自动排除，未进入对外版（这是预期行为，只是提醒你确认过一眼）"
+            )
 
     out_wb = openpyxl.Workbook()
     out_ws = out_wb.active
@@ -121,15 +136,14 @@ def convert(input_path: Path, output_path: Path) -> list[str]:
             value = src_row[src_col - 1].value
             out_ws.cell(row=row_idx, column=out_col, value=value)
             if isinstance(value, str):
-                for kw in BANNED_KEYWORDS:
-                    if kw in value:
-                        cell_ref = out_ws.cell(row=row_idx, column=out_col).coordinate
-                        warnings.append(f"{cell_ref}（{EXTERNAL_WHITELIST[out_col - 1]}）命中关键词「{kw}」")
+                for kw in scan_value(value, PIPELINE_KEYWORDS):
+                    cell_ref = out_ws.cell(row=row_idx, column=out_col).coordinate
+                    warnings.append(f"{cell_ref}（{EXTERNAL_WHITELIST[out_col - 1]}）命中关键词「{kw}」")
         row_idx += 1
 
     # 重新构建的工作簿天然不含：内部版的其他工作表、单元格批注、隐藏列、红色表头标记
     out_wb.save(output_path)
-    return warnings
+    return warnings, notices
 
 
 def _default_output_path(output_dir: Path) -> Path:
@@ -148,12 +162,16 @@ def _main() -> None:
     output_path = _default_output_path(args.output_dir)
 
     try:
-        warnings = convert(args.input, output_path)
+        warnings, notices = convert(args.input, output_path)
     except PipelineFormatError as e:
         print(f"生成失败：{e}", file=sys.stderr)
         sys.exit(1)
 
     print(f"对外版已生成：{output_path}")
+    if notices:
+        print("\n结构性提醒：")
+        for n in notices:
+            print(f"  - {n}")
     if warnings:
         print("\n以下内容命中兜底关键词扫描，发送前请人工复核（不代表一定要删，但要看一眼）：")
         for w in warnings:
@@ -165,6 +183,8 @@ def _main() -> None:
         detail = f"输入={args.input.name}，输出={output_path.name}"
         if warnings:
             detail += f"；关键词扫描命中 {len(warnings)} 处，待人工复核"
+        if notices:
+            detail += f"；结构性提醒 {len(notices)} 条"
         append_entry(
             args.project_dir,
             actor="orchestrator",
