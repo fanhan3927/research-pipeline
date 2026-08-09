@@ -25,7 +25,44 @@ Automated research pipeline: PRD → Distribution Excel / R&amp;D PDF+PPT
 
 ## 当前阶段
 
-优先完成 **PRD（产品需求文档）** 的编写与确认，再进入具体实现。
+PRD 已确认（见 `docs/PRD.md`），Phase 1（分发链编排层骨架）已搭建。
 
-## 目录结构（规划中）
+## 依赖
+
+```
+pip install -r requirements.txt
+```
+
+## 目录结构
+
+```
+research-pipeline/
+├── docs/
+│   └── PRD.md                        # 产品需求文档
+├── orchestrator/
+│   └── distribution-chain/
+│       └── SKILL.md                  # 分发链编排指令（研发链版本待 Phase 2）
+├── scripts/
+│   ├── audit_log.py                  # 项目操作日志（可追溯性基础设施）
+│   ├── init_project.py               # 项目归档骨架初始化
+│   └── make_external_pipeline.py     # Pipeline 内部版 → 对外版
+├── projects/                         # 各项目的归档目录（默认不入库，见 .gitignore）
+└── requirements.txt
+```
+
+## 快速开始（分发链）
+
+```bash
+# 1. 建项目骨架
+python scripts/init_project.py --name "示例项目" --chain distribution
+
+# 2. 按 orchestrator/distribution-chain/SKILL.md 的步骤，在 Claude Code 对话中
+#    走完研判 → 商务条件确认 → 加工 → 入库 → 生成对外版
+
+# 3. 内部版转对外版（脚本单独可测试）
+python scripts/make_external_pipeline.py \
+  --input projects/示例项目_20260809/03_pipeline/Pipeline_内部版.xlsx \
+  --output-dir projects/示例项目_20260809/03_pipeline \
+  --project-dir projects/示例项目_20260809
+```
 
