@@ -69,6 +69,19 @@ python scripts/audit_log.py append <project_dir> --actor user \
 材料回来后，用户重新上传，说"材料回来了，重新上传更新一下"，编排层只重跑受影响的部分
 （一般是步骤 3 的更新 + 步骤 4 及之后），不用从步骤 1 整个重来。
 
+**解除等待时，日志要用同一个 `--pause-type external_wait` 记录，不要用默认的 `-`**——
+`project_status.py` 只筛出 `confirm`/`external_wait` 两类记录展示，如果解除记录不带这个标记，
+在那份筛选视图里会一直显得"还在等"，即使实际已经继续往下跑了：
+
+```
+python scripts/audit_log.py append <project_dir> --actor user \
+  --step "补充材料清单回复" --detail "<材料回来了的摘要，或注明是模拟/测试数据>" \
+  --pause-type external_wait
+```
+
+（这条踩坑是 Phase 4 真实材料验证时发现的：忘记带这个标记，`project_status.py` 就会
+误判流程还卡在等待材料这一步。）
+
 ## 步骤 4：定性研判
 
 触发 `pe-hardtech-screening`，输入是步骤 3 的移交字段表（不是原始材料——避免三个 skill
