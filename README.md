@@ -25,7 +25,7 @@ Automated research pipeline: PRD → Distribution Excel / R&amp;D PDF+PPT
 
 ## 当前阶段
 
-PRD 已确认（见 `docs/PRD.md`），Phase 1（分发链编排层骨架）已搭建。
+PRD 已确认（见 `docs/PRD.md`），Phase 1（分发链编排层骨架）、Phase 2（研发链编排层骨架）已搭建。
 
 ## 依赖
 
@@ -40,12 +40,15 @@ research-pipeline/
 ├── docs/
 │   └── PRD.md                        # 产品需求文档
 ├── orchestrator/
-│   └── distribution-chain/
-│       └── SKILL.md                  # 分发链编排指令（研发链版本待 Phase 2）
+│   ├── distribution-chain/
+│   │   └── SKILL.md                  # 分发链编排指令
+│   └── rd-chain/
+│       └── SKILL.md                  # 研发链编排指令
 ├── scripts/
 │   ├── audit_log.py                  # 项目操作日志（可追溯性基础设施）
-│   ├── init_project.py               # 项目归档骨架初始化
-│   └── make_external_pipeline.py     # Pipeline 内部版 → 对外版
+│   ├── init_project.py               # 项目归档骨架初始化/跨链扩展
+│   ├── make_external_pipeline.py     # 分发链：Pipeline 内部版 → 对外版
+│   └── generate_report_versions.py   # 研发链：研究报告/PPT大纲 → 内部版+对外版
 ├── projects/                         # 各项目的归档目录（默认不入库，见 .gitignore）
 └── requirements.txt
 ```
@@ -63,6 +66,23 @@ python scripts/init_project.py --name "示例项目" --chain distribution
 python scripts/make_external_pipeline.py \
   --input projects/示例项目_20260809/03_pipeline/Pipeline_内部版.xlsx \
   --output-dir projects/示例项目_20260809/03_pipeline \
+  --project-dir projects/示例项目_20260809
+```
+
+## 快速开始（研发链）
+
+```bash
+# 1. 建/扩展项目骨架（同名项目已存在时会在原目录上补齐子目录，不新建）
+python scripts/init_project.py --name "示例项目" --chain rd
+
+# 2. 按 orchestrator/rd-chain/SKILL.md 的步骤，在 Claude Code 对话中走完
+#    材料证伪 → 定性研判 → 估值定价 → 整合起草内部版草稿（用 <!-- external:exclude --> 标记内部专属内容）
+
+# 3. 内部版草稿转内部版+对外版 Markdown（脚本单独可测试）
+python scripts/generate_report_versions.py \
+  --input projects/示例项目_20260809/07_report/研究报告_内部版草稿.md \
+  --output-dir projects/示例项目_20260809/07_report \
+  --kind report \
   --project-dir projects/示例项目_20260809
 ```
 

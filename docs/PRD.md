@@ -1,6 +1,6 @@
 # Research Pipeline 自动化程序 — 产品需求文档（PRD）
 
-**文档状态**：v0.2，范围与关键节点已确认，进入 Phase 1 开发
+**文档状态**：v0.3，Phase 1、Phase 2 骨架已搭建
 **密级**：内部文件
 **编写日期**：2026-08-09
 **依赖资产**：`hardtech-project-triage-matching`、`pipeline-intake`、`preipo-material-forensics`、`pe-hardtech-screening`、`hardtech-preipo-valuation`（五个已存在的 Claude Skill）
@@ -67,10 +67,11 @@ research-pipeline/
 │   ├── distribution-chain/          # 分发链编排（新 skill 或 slash command）
 │   └── rd-chain/                    # 研发链编排（新 skill 或 slash command）
 ├── scripts/
-│   ├── make_external_pipeline.py    # Pipeline 内部版 → 对外版（黑名单+白名单双重校验，已在原手册中定义，本期落地为脚本）
-│   ├── generate_research_report.py  # 新增：整合 forensics+screening+valuation 产出 → 12 页 PDF（内部版/对外版两份）
-│   ├── generate_deck_outline.py     # 新增：生成 15 页 PPT 大纲 Markdown（内部版/对外版两份）
-│   └── sanitize_report.py           # 新增：研发链对外脱敏规则引擎
+│   ├── audit_log.py                  # 共享：操作日志读写（人工确认/外部等待两类记录）
+│   ├── init_project.py               # 共享：项目归档骨架初始化/扩展（同名项目跨链自动衔接）
+│   ├── make_external_pipeline.py     # 分发链：Pipeline 内部版 → 对外版（重建工作簿，白名单校验）
+│   └── generate_report_versions.py   # 研发链：研究报告/PPT大纲 内部版草稿 → 内部版+对外版 Markdown
+│       # 报告与大纲共用同一个脚本（--kind report|deck），脱敏机制见 5.2
 ├── projects/                        # 按项目归档，用于可追溯、可复现
 │   └── <项目名>_<日期>/
 │       ├── 00_raw/                  # 原始材料
@@ -91,8 +92,9 @@ research-pipeline/
 `forensics`、`screening`、`valuation` 三个 skill 各自产出的是独立文档（事实清单/疑点清单、七步研判报告、估值报告），原手册里这三份文档本身就是最终交付物，从未要求整合成一份 PDF 或 PPT。而本项目要求的最终产出是"12 页 PDF 研究报告"和"15 页 PPT 大纲"，这是**编排层需要新增的整合与排版能力**，具体做法：
 
 1. 三份产出各自完成后，编排层把三者的关键内容抽取整合成一份统一结构的研究报告大纲（章节建议：项目概览 / 材料可信度与核心疑点 / 团队与治理 / 技术与护城河 / 财务与数据质量 / 退出路径与确定性 / 估值与入场价格测算 / A-B-C 结论与建议，共约 8 个章节）。**12 页 / 15 页均为软性篇幅目标，不是硬性页数要求**——某个项目疑点特别多、或某一章节没有内容，允许相应增减，不强行填充或裁剪。
-2. 调用 `pdf` skill 排版生成 PDF（内部版含全部内容；对外版按第六节脱敏规则清洗后再生成）。
-3. 产出 15 页 PPT Deck 大纲，**只输出结构化 Markdown，不调用 `pptx` skill、不生成实际 .pptx 文件**——用户会用自己的其他工具把这份 Markdown 大纲转成正式 PPT，编排层不需要覆盖这一步。
+2. **脱敏机制**：起草内部版 Markdown 草稿时，把入场价格上限、IRR 反推过程、A/B/C 定级、go/no-go 结论、M1-M4 可信度分级标注、疑点三段式中的"冲突所在"分析，包在 `<!-- external:exclude -->` … `<!-- /external:exclude -->` 标记之间。`scripts/generate_report_versions.py` 只做机械转换——按标记删除内容、跑一遍关键词兜底扫描——不自己判断语义；语义判断（哪些内容属于内部专属）在起草阶段由编排指令（见 `orchestrator/rd-chain/SKILL.md`）里的规则表完成。标记不配对时脚本直接报错拒绝生成，不会"尽量猜"。
+3. 调用 `pdf` skill 把上一步产出的内部版/对外版 Markdown 分别渲染成 PDF。
+4. 产出 15 页 PPT Deck 大纲，**只输出结构化 Markdown，不调用 `pptx` skill、不生成实际 .pptx 文件**——用户会用自己的其他工具把这份 Markdown 大纲转成正式 PPT，编排层不需要覆盖这一步。大纲的内部版/对外版复用同一套脱敏机制和脚本（`--kind deck`）。
 
 ## 六、详细流程设计
 
@@ -189,8 +191,8 @@ research-pipeline/
 | 阶段 | 内容 | 交付物 |
 |---|---|---|
 | Phase 0 | PRD 确认（本文档） | 本 PRD |
-| Phase 1 | 分发链编排层 MVP | `orchestrator/distribution-chain` + `make_external_pipeline.py` + 项目归档结构，可跑通一个完整项目实例 |
-| Phase 2 | 研发链编排层 MVP | `orchestrator/rd-chain` + 报告生成层脚本，可跑通一个完整项目实例，产出内部版+对外版 PDF/PPT |
+| Phase 1 ✅ | 分发链编排层骨架 | `orchestrator/distribution-chain/SKILL.md` + `make_external_pipeline.py` + `init_project.py` / `audit_log.py`，脚本已用合成数据端到端测过 |
+| Phase 2 ✅ | 研发链编排层骨架 | `orchestrator/rd-chain/SKILL.md` + `generate_report_versions.py`（内部版/对外版脱敏，report/deck 共用），`init_project.py` 支持跨链自动扩展同一项目目录 |
 | Phase 3 | 两链自动衔接 + 脱敏兜底检查 | 6.4 节衔接机制、7 节脱敏扫描 |
 | Phase 4 | 联调与试用反馈 | 用真实/脱敏后的历史项目跑通全流程，收集调整点 |
 
@@ -211,4 +213,4 @@ research-pipeline/
 
 ---
 
-*v0.2，已确认，进入 Phase 1 开发。*
+*v0.3，Phase 1 / Phase 2 骨架已搭建并跑通端到端脚本测试，尚未用真实项目材料走完整对话流程验证。*
