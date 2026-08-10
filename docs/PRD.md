@@ -1,6 +1,6 @@
 # Research Pipeline 自动化程序 — 产品需求文档（PRD）
 
-**文档状态**：v0.5，Phase 1-5 已完成，新增投资人材料包（Teaser + Infographics 提示词）
+**文档状态**：v0.6，Phase 1-6 已完成，投资人材料包已用真实材料验证
 **密级**：内部文件
 **编写日期**：2026-08-09
 **依赖资产**：`hardtech-project-triage-matching`、`pipeline-intake`、`preipo-material-forensics`、`pe-hardtech-screening`、`hardtech-preipo-valuation`（五个已存在的 Claude Skill）
@@ -235,7 +235,8 @@ Teaser 和 Infographics 提示词起草时**只读两条链已经生成的对外
 | Phase 3 ✅ | 两链自动衔接细节打磨 | `backfill_exit_valuation.py`（退出估值回填+自动重生对外版）、`banned_keywords.py`（两条链共用关键词表，消除重复维护风险）、`project_status.py`（跨会话接续用的进度速览）、`make_external_pipeline.py` 新增入场价格上限结构性提醒 |
 | Phase 4 ✅ | 真实材料端到端验证 | 用一份天使轮项目 BP 实跑研发链（证伪→研判→报告）与分发链（边界压力测试），发现并修复 4 个真实问题：外部等待解除记录漏打标记、分发链缺适用性预检、`docx`/`pdf` 依赖的本地转换工具损坏、脱敏标记的章节级排除边界 |
 | Phase 5 ✅ | 投资人材料包 | `orchestrator/investor-package/SKILL.md` + `check_external_safe.py`，新增 Teaser（Markdown）+ Infographics 提示词（JSON）两个产出物，两链都跑完后触发，只出对外版 |
-| Phase 6 | 联调与试用反馈 | 用真实/脱敏后的历史项目跑通五个产出物的完整流程，收集调整点 |
+| Phase 6 ✅ | 投资人材料包真实材料验证 | 用轻智汇案例跑通 Teaser + Infographics 提示词全流程（含补做分发链剩余步骤到 Pipeline 对外版），验证"缺估值数据时优雅省略退出预期章节"符合预期；发现并修复 `pipeline-intake` 自带 Excel 脚本表头与本系统白名单不一致的问题 |
+| Phase 7 | 更大范围联调 | 用更多真实/脱敏历史项目跑通五个产出物的完整流程，收集调整点 |
 
 ## 十一、验收标准
 
@@ -255,4 +256,4 @@ Teaser 和 Infographics 提示词起草时**只读两条链已经生成的对外
 
 ---
 
-*v0.5，Phase 1-5 已完成：两链骨架、真实材料端到端验证（含 4 处真实问题修复）、投资人材料包（Teaser + Infographics 提示词）。尚未验证的是新增的两个产出物本身——这是 Phase 6 的内容。*
+*v0.6，Phase 1-6 已完成：两链骨架、真实材料端到端验证（含 5 处真实问题修复）、投资人材料包（Teaser + Infographics 提示词）已用真实项目案例验证。*
