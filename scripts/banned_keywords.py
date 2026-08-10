@@ -28,6 +28,11 @@ REPORT_KEYWORDS = COMMON_KEYWORDS + [
     "冲突所在",
 ]
 
+# 投资人材料包（Teaser / Infographics 提示词）专属：两条链的对外禁用词并集。
+# 这两个产出物只出对外版、没有内部版可对比清洗，关键词扫描是唯一的机械兜底，
+# 所以宁可覆盖面宽一点，把两份列表都并进来。
+INVESTOR_PACKAGE_KEYWORDS = sorted(set(PIPELINE_KEYWORDS) | set(REPORT_KEYWORDS))
+
 
 def scan_text(text: str, keywords: list[str]) -> list[tuple[int, str, str]]:
     """逐行扫描 text，返回 (行号, 命中关键词, 该行内容) 的列表。"""

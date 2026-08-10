@@ -1,6 +1,6 @@
 # Research Pipeline 自动化程序 — 产品需求文档（PRD）
 
-**文档状态**：v0.4，Phase 1-3 骨架已搭建
+**文档状态**：v0.5，Phase 1-5 已完成，新增投资人材料包（Teaser + Infographics 提示词）
 **密级**：内部文件
 **编写日期**：2026-08-09
 **依赖资产**：`hardtech-project-triage-matching`、`pipeline-intake`、`preipo-material-forensics`、`pe-hardtech-screening`、`hardtech-preipo-valuation`（五个已存在的 Claude Skill）
@@ -24,8 +24,9 @@
 2. 编排层在需要人工输入或确认的节点主动提问，其余环节自动执行，减少用户手动操作。
 3. 分发链最终产出**结构化 Pipeline Excel**（内部版 + 对外版）。
 4. 研发链最终产出 **约 12 页的 PDF 研究报告** 与 **15 页的 PPT Deck 大纲（Markdown）**，且分别产出**内部完整版**与**对外脱敏版**。
-5. 全流程可追溯（每个项目的每一步输入/输出/人工决定都留痕）、可复现（同样的输入 + 同样的人工决定，能重新跑出同样的结果）。
-6. 严格延续现有手册中的信息隔离铁律，不能因为自动化而增加信息泄露风险。
+5. 两条链都跑完后，追加产出 **Teaser（Markdown）** 与 **Infographics 提示词（JSON，供 ChatGPT 图片生成模型使用）**，两者都只出对外版，不做内部版（v0.5 新增，见第六部分投资人材料包）。
+6. 全流程可追溯（每个项目的每一步输入/输出/人工决定都留痕）、可复现（同样的输入 + 同样的人工决定，能重新跑出同样的结果）。
+7. 严格延续现有手册中的信息隔离铁律，不能因为自动化而增加信息泄露风险。
 
 ## 三、名词与角色定义
 
@@ -33,6 +34,7 @@
 |---|---|
 | 分发链 | `hardtech-project-triage-matching` → （商务条件确认）→ （加工层）→ `pipeline-intake` → （对外版生成） |
 | 研发链 | `preipo-material-forensics` → `pe-hardtech-screening` → `hardtech-preipo-valuation` → （报告生成层，新增） |
+| 投资人材料包 | 两条链都跑完后的第三条支线（v0.5 新增），产出 Teaser + Infographics 提示词，只取两条链的对外版文件，不接触内部版 |
 | 编排层 | 本项目新增的部分，负责按顺序调用五个 skill、管理中间产物、在关键节点向用户提问、生成最终交付文件 |
 | L1 / L2 / L3 | 沿用原手册的信息层级：L1 可发给项目方/转让方，L2 可发给机构投资人，L3 仅内部可见 |
 | 关键节点 | 流程中无法由编排层自动推进、必须暂停的步骤，分两类（见 6.5）：**人工确认**（等用户本人输入或决定）与**外部等待**（等项目方/转让方等外部方回复后，由用户重新触发） |
@@ -45,6 +47,7 @@
 - 分发链全流程编排：研判 → 商务条件确认（人工）→ 加工层 → 入库 → 内部列回填 → 对外版生成 → 发送前检查清单。
 - 研发链全流程编排：材料证伪（快筛/深读判断，人工）→ 定性研判 → 估值定价（可比公司数据，人工提供）→ **新增报告生成层**（12 页 PDF + 15 页 PPT 大纲，内部版与对外脱敏版）。
 - 两链自动衔接：分发链定级 A/B 自动询问是否启动研发链；研发链的退出估值自动回填 Pipeline，入场价格上限不进 Pipeline。
+- **投资人材料包**（v0.5 新增）：两条链都跑完后触发的第三条支线，产出 Teaser（Markdown）+ Infographics 提示词（JSON），只出对外版，取材范围限定在两条链已生成的对外版文件。
 - 项目级文件归档与操作日志（可追溯、可复现的基础设施）。
 
 **本期不做**（Out of scope，留待后续版本）：
@@ -64,18 +67,21 @@
 ```
 research-pipeline/
 ├── orchestrator/
-│   ├── distribution-chain/          # 分发链编排（新 skill 或 slash command）
-│   └── rd-chain/                    # 研发链编排（新 skill 或 slash command）
+│   ├── distribution-chain/          # 分发链编排
+│   ├── rd-chain/                    # 研发链编排
+│   └── investor-package/            # 投资人材料包编排（v0.5 新增，两链都跑完后的第三条支线）
 ├── scripts/
 │   ├── audit_log.py                  # 共享：操作日志读写（人工确认/外部等待两类记录）
 │   ├── init_project.py               # 共享：项目归档骨架初始化/扩展（同名项目跨链自动衔接）
-│   ├── banned_keywords.py            # 共享：发送前兜底关键词表，两条链的对外版脚本都引用它
+│   ├── banned_keywords.py            # 共享：发送前兜底关键词表，三条支线的对外版都引用它
 │   ├── project_status.py             # 共享：查看项目目录完成情况 + 历史暂停记录，用于跨会话接续
 │   ├── make_external_pipeline.py     # 分发链：Pipeline 内部版 → 对外版（重建工作簿，白名单校验）
 │   ├── generate_report_versions.py   # 研发链：研究报告/PPT大纲 内部版草稿 → 内部版+对外版 Markdown
 │   │   # 报告与大纲共用同一个脚本（--kind report|deck），脱敏机制见 5.2
-│   └── backfill_exit_valuation.py    # 两链衔接（反向）：把退出估值写回 Pipeline 并重新生成对外版
-│       # 刻意只暴露"退出估值"这一个可写字段，结构上就不给"写入场价格上限"留口子，见 6.4
+│   ├── backfill_exit_valuation.py    # 两链衔接（反向）：把退出估值写回 Pipeline 并重新生成对外版
+│   │   # 刻意只暴露"退出估值"这一个可写字段，结构上就不给"写入场价格上限"留口子，见 6.4
+│   └── check_external_safe.py        # 投资人材料包：Teaser/Infographics 提示词发送前关键词兜底扫描
+│       # 这两个产出物只出对外版，没有内部版可对比清洗，见 6.6
 ├── projects/                        # 按项目归档，用于可追溯、可复现
 │   └── <项目名>_<日期>/
 │       ├── 00_raw/                  # 原始材料
@@ -86,6 +92,7 @@ research-pipeline/
 │       ├── 05_screening/            # 研发链：研判报告
 │       ├── 06_valuation/            # 研发链：估值报告
 │       ├── 07_report/               # 研发链：PDF/PPT 内部版+对外版
+│       ├── 08_investor_materials/   # 投资人材料包：Teaser + Infographics 提示词（仅对外版）
 │       └── audit_log.md             # 操作日志：每步时间戳、输入、输出、人工确认记录
 └── docs/
     └── PRD.md
@@ -158,6 +165,32 @@ research-pipeline/
 
 两类暂停都要写入 `audit_log.md`：人工确认记录"谁在什么时间确认了什么"，外部等待记录"什么时间发出等待、什么时间收到回复、恢复后重新跑了哪些步骤"。
 
+### 6.6 投资人材料包（v0.5 新增）
+
+两条链都跑完之后的第三条支线，产出两份新的对外材料，触发词例如"生成Teaser""出个信息图提示词"。
+
+**触发前置条件**：`03_pipeline/` 要有 Pipeline 对外版，`05_screening/` 至少要有研判报告。
+估值（`06_valuation/`）不是硬性前提——早期阶段项目按规则跳过估值 skill 的，Teaser 里对应
+就没有"退出预期"这一节，不强求凑数据。跑 `project_status.py` 确认前置条件是否满足。
+
+**只出对外版的隔离机制**：跟 Pipeline/研究报告"内部版打底、脚本清洗出对外版"的做法不同，
+Teaser 和 Infographics 提示词起草时**只读两条链已经生成的对外版文件**，不接触任何内部版/
+研判备忘/疑点清单——内部专属内容压根不会进入起草者的取材范围，这本身就是隔离机制，
+不需要标记后再删除。起草完成后仍跑一遍关键词兜底扫描（`check_external_safe.py`，用
+`banned_keywords.INVESTOR_PACKAGE_KEYWORDS`，即两条链对外版关键词表的并集）作为最后一道
+保险。
+
+**Teaser（Markdown）**：结构不锁死模板，跟着项目实际情况定，参考格式而非强制格式；但必须
+遵守跟 Pipeline 加工层同一套"必须如实披露"规则（估值依据、折扣/倒挂、回购条款、锁定期、
+重大风险、数据口径不能选择性隐藏）——Teaser 是精简版推介材料，不是可以只挑好话说的广告。
+
+**Infographics 提示词（JSON）**：产出给 ChatGPT 图片生成模型直接使用的提示词，不产出图片
+本身。格式统一用结构化 JSON（不是自然语言段落）——对这类模型而言，JSON 结构化 prompt
+在"精确控制某个板块该放哪个数字/标签"上比自然语言段落更可靠，适合金融数据类信息图。
+从一个 7 种风格的参考库里，结合项目实际素材（有没有技术架构图、有没有清晰的融资时间轴、
+亮点是否适合编号呈现）挑 3 种最贴合的风格，各写一句选择理由，再分别填入真实项目数据生成
+完整提示词——不用占位符，跟 Teaser/Pipeline 里的内容保持一致。
+
 ## 七、信息隔离与脱敏规则
 
 编排层必须继承原手册的三条铁律，并新增研发链报告的对外脱敏规则：
@@ -200,7 +233,9 @@ research-pipeline/
 | Phase 1 ✅ | 分发链编排层骨架 | `orchestrator/distribution-chain/SKILL.md` + `make_external_pipeline.py` + `init_project.py` / `audit_log.py`，脚本已用合成数据端到端测过 |
 | Phase 2 ✅ | 研发链编排层骨架 | `orchestrator/rd-chain/SKILL.md` + `generate_report_versions.py`（内部版/对外版脱敏，report/deck 共用），`init_project.py` 支持跨链自动扩展同一项目目录 |
 | Phase 3 ✅ | 两链自动衔接细节打磨 | `backfill_exit_valuation.py`（退出估值回填+自动重生对外版）、`banned_keywords.py`（两条链共用关键词表，消除重复维护风险）、`project_status.py`（跨会话接续用的进度速览）、`make_external_pipeline.py` 新增入场价格上限结构性提醒 |
-| Phase 4 | 联调与试用反馈 | 用真实/脱敏后的历史项目跑通全流程，收集调整点 |
+| Phase 4 ✅ | 真实材料端到端验证 | 用一份天使轮项目 BP 实跑研发链（证伪→研判→报告）与分发链（边界压力测试），发现并修复 4 个真实问题：外部等待解除记录漏打标记、分发链缺适用性预检、`docx`/`pdf` 依赖的本地转换工具损坏、脱敏标记的章节级排除边界 |
+| Phase 5 ✅ | 投资人材料包 | `orchestrator/investor-package/SKILL.md` + `check_external_safe.py`，新增 Teaser（Markdown）+ Infographics 提示词（JSON）两个产出物，两链都跑完后触发，只出对外版 |
+| Phase 6 | 联调与试用反馈 | 用真实/脱敏后的历史项目跑通五个产出物的完整流程，收集调整点 |
 
 ## 十一、验收标准
 
@@ -208,6 +243,7 @@ research-pipeline/
 2. 用户上传一份研发链项目材料，全程只在标注的关键节点被追问，最终拿到内部版+对外版的 12 页 PDF 与 15 页 PPT 大纲，对外版不含入场价格上限、内部定级等禁止信息。
 3. 分发链定级 A/B 后，编排层能自动询问是否启动研发链，且研发链结果能自动回填退出估值到对应 Pipeline 行。
 4. 任意一个项目的 `audit_log.md` 能够还原出该项目从原始材料到最终交付物的完整操作轨迹。
+5. 一个项目两条链都跑完后，用户能拿到 Teaser（Markdown）与 3 份 Infographics 提示词（JSON），内容全部取自两条链的对外版文件，不含入场价格上限/内部定级等禁止信息；如果项目跳过了估值步骤，Teaser 里对应的退出预期章节应如实缺省，不编造数字。
 
 ## 十二、已确认事项（本轮定稿）
 
@@ -219,4 +255,4 @@ research-pipeline/
 
 ---
 
-*v0.4，Phase 1-3 骨架已搭建并跑通端到端脚本测试（含两链衔接、脱敏兜底、跨会话接续），尚未用真实项目材料走完整对话流程验证——这是 Phase 4 的内容。*
+*v0.5，Phase 1-5 已完成：两链骨架、真实材料端到端验证（含 4 处真实问题修复）、投资人材料包（Teaser + Infographics 提示词）。尚未验证的是新增的两个产出物本身——这是 Phase 6 的内容。*
