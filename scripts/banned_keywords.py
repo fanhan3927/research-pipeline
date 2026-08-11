@@ -33,6 +33,33 @@ REPORT_KEYWORDS = COMMON_KEYWORDS + [
 # 所以宁可覆盖面宽一点，把两份列表都并进来。
 INVESTOR_PACKAGE_KEYWORDS = sorted(set(PIPELINE_KEYWORDS) | set(REPORT_KEYWORDS))
 
+# Term Sheet 专属：这份文件比 Teaser/Infographics 更特殊——起草时需要读
+# 05_screening 的「谈判清单/红线条款」和 04_forensics 的「必答项缺口」来生成
+# 交割先决条件与投资者保护条款，即读取范围本身就比纯营销材料更贴近内部文件，
+# 转译时最容易带出两类东西：
+#   1. preipo-material-forensics 手册里明令 L1 禁止的怀疑性措辞
+#      （原文出自该 skill 的 output-templates.md「L1 件中禁止出现」清单）
+#   2. hardtech-project-triage-matching Pipeline 内部版的十个专属列名
+#      （原文出自 make_external_pipeline.py 的 INTERNAL_COLS）
+# 这两类词单独看都不属于 INVESTOR_PACKAGE_KEYWORDS，因为 Teaser/Infographics
+# 设计上根本不接触这两份内部文件，不会有这个风险；Term Sheet 会接触，所以要单列。
+DOUBT_LANGUAGE_KEYWORDS = [
+    "疑虚增", "存疑", "注水", "包装", "粉饰", "打问号", "对不上", "不实",
+]
+PIPELINE_INTERNAL_COLUMN_KEYWORDS = [
+    "内部定级", "命中红线", "命中红色事项", "已排除客户类型", "排除依据",
+    "推荐推送顺序", "本方合作模式", "商务条件状态", "上次复核日期", "内部备注",
+]
+# 我方专项基金自身的 LP-GP 经济条款（管理费/Carry/认购费等）已在 COMMON_KEYWORDS
+# 里覆盖，但 Term Sheet 面向被投企业，这类条款出现在这里性质比出现在 Pipeline/
+# Teaser 里更严重——那是我方与自己 LP 之间的条款，不是我方与被投企业之间的交易
+# 条款，两者一旦在同一份文件里出现，等于把募资结构暴露给了被投企业。
+TERM_SHEET_KEYWORDS = sorted(
+    set(REPORT_KEYWORDS)
+    | set(DOUBT_LANGUAGE_KEYWORDS)
+    | set(PIPELINE_INTERNAL_COLUMN_KEYWORDS)
+)
+
 
 def scan_text(text: str, keywords: list[str]) -> list[tuple[int, str, str]]:
     """逐行扫描 text，返回 (行号, 命中关键词, 该行内容) 的列表。"""
