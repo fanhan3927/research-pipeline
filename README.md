@@ -19,12 +19,15 @@ Automated research pipeline: PRD → Distribution Excel / R&amp;D PDF+PPT
 
 3. **最终产出**（五个，前三个各自挂在一条链上，后两个要两条链都跑完才触发）
    - **分发链**：结构化 Pipeline Excel（内部版+对外版）
-   - **研发链**：约 12 页 PDF 研究报告 + 15 页 PPT Deck 大纲 Markdown（各自内部版+对外版）
+   - **研发链**：约 12 页 PDF 研究报告 + 15 页 PPT Deck 大纲 Markdown（各自内部版+对外版）——
+     内部按**阶段与规模自动分流**：成长期至 Pre-IPO 走 `pe-hardtech-screening`+
+     `hardtech-preipo-valuation`；种子/天使/Pre-A 且估值 2 亿元以内走
+     `sequoia-seed-tech-startup-investment-evaluator` 一站式研判+估值
    - **投资人材料包**（两链都跑完后触发，只出对外版）：Teaser（Markdown）+ Infographics 提示词（JSON，供 ChatGPT 图片生成模型使用）
 
 ## 当前阶段
 
-PRD 已确认（见 `docs/PRD.md`），Phase 1-5 已完成：分发链、研发链骨架，真实材料端到端验证（发现并修复 4 个真实问题），投资人材料包骨架。
+PRD 已确认（见 `docs/PRD.md`），Phase 1-7 已完成：分发链、研发链骨架，真实材料端到端验证（发现并修复 5 个真实问题），投资人材料包（已用真实案例验证），研发链早期项目分流路径。
 
 ## 依赖
 

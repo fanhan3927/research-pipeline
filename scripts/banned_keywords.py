@@ -21,11 +21,16 @@ PIPELINE_KEYWORDS = COMMON_KEYWORDS + [
 ]
 
 # 研发链对外版专属：入场价格上限/定级/可信度分级等研判链铁律要求不外发的内容
+# 含 A 路径（screening+valuation）与 B 路径（sequoia 早期项目一站式评估）两套内部判断用语——
+# 两条路径产出不同，但都属于"入场类"议价筹码或内部评估依据，禁用规则一视同仁
 REPORT_KEYWORDS = COMMON_KEYWORDS + [
     "入场价格上限", "IRR 反推", "目标IRR", "目标 IRR",
     "go/no-go", "Go/No-Go", "内部定级", "A/B/C 定级",
     "M1", "M2", "M3", "M4",
     "冲突所在",
+    # B 路径（sequoia-seed-tech-startup-investment-evaluator）专属
+    "入场估值区间", "STRONG_YES", "PROCEED_TO_VOTE", "REJECT",
+    "人事匹配估值法", "七维雷达", "10x 反向检验", "10x反向检验",
 ]
 
 # 投资人材料包（Teaser / Infographics 提示词）专属：两条链的对外禁用词并集。
