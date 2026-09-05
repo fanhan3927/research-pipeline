@@ -21,7 +21,7 @@ Automated research pipeline: PRD → Distribution Excel / R&amp;D PDF+PPT
    - **分发链**：结构化 Pipeline Excel（内部版+对外版）
    - **研发链**：约 12 页 PDF 研究报告 + 15 页 PPT Deck 大纲 Markdown（各自内部版+对外版）——
      内部按**阶段与规模自动分流**：成长期至 Pre-IPO 走 `pe-hardtech-screening`+
-     `hardtech-preipo-valuation`；种子/天使/Pre-A 且估值 2 亿元以内走
+     `hardtech-preipo-valuation`；种子/天使/Pre-A 且估值 3 亿元以内走
      `sequoia-seed-tech-startup-investment-evaluator` 一站式研判+估值
    - **投资人材料包**（两链都跑完后触发，只出对外版）：Teaser（Markdown）+ Infographics 提示词（JSON，供 ChatGPT 图片生成模型使用）
 

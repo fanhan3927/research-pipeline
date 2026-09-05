@@ -3,7 +3,7 @@ name: rd-chain-orchestrator
 description: >-
   研发链编排层。串联 preipo-material-forensics 与两条阶段分流路径——
   成长期至 Pre-IPO 路径（pe-hardtech-screening → hardtech-preipo-valuation）、
-  种子/天使/Pre-A 且估值 2 亿元以内路径（sequoia-seed-tech-startup-investment-evaluator
+  种子/天使/Pre-A 且估值 3 亿元以内路径（sequoia-seed-tech-startup-investment-evaluator
   一站式完成研判+估值）——自动推进材料证伪、定性研判、估值定价，
   并整合产出为 12 页研究报告（PDF）+ 15 页 PPT 大纲（Markdown），
   各自产出内部完整版与对外脱敏版。当用户说"走研发链""这个项目要出研判报告"
@@ -90,15 +90,23 @@ python scripts/audit_log.py append <project_dir> --actor user \
 
 | 条件 | 路径 |
 |---|---|
-| 种子/天使/Pre-A 轮，**且**投后估值 ≤ 2 亿元人民币 | **B 路径**：`sequoia-seed-tech-startup-investment-evaluator` 一站式完成 |
-| A 轮及以后，或估值 > 2 亿元，或已是成长期至 Pre-IPO | **A 路径**：原有 `pe-hardtech-screening` → `hardtech-preipo-valuation` |
+| 种子/天使/Pre-A 轮，**且**投后估值 ≤ 3 亿元人民币 | **B 路径**：`sequoia-seed-tech-startup-investment-evaluator` 一站式完成 |
+| A 轮及以后，或估值 > 3 亿元，或已是成长期至 Pre-IPO | **A 路径**：原有 `pe-hardtech-screening` → `hardtech-preipo-valuation` |
 | 轮次/估值材料里没写清楚，判断不了 | 停下来问用户，不要猜 |
+
+**已知的一处口径差异，明确标注、不做隐藏处理**：`sequoia-seed-tech-startup-investment-evaluator`
+skill 自身手册里声明的适用范围是"投后估值 2 亿元人民币以内"，比本编排层这条 ≤3 亿元的
+路由阈值更窄。这是编排层刻意做出的更宽松判断（业务方要求放宽 B 路径覆盖面），不是遗漏或
+不一致——2-3 亿元区间的项目会被本编排层路由进一个"自称"上限为 2 亿元的 skill。如果
+该 skill 后续版本更新后在这个区间给出的判断质量明显不如预期（比如估值方法论对超过它
+自身声明上限的项目适配变差），应该把这条差异重新提出来，考虑是否需要收紧回 2 亿元，
+或者等 skill 自身更新其适用范围声明。
 
 判断依据从步骤 3 的移交字段表里取（"本轮融资额（增资/老股）""本轮投前估值""所处阶段"
 这几个字段），通常不需要额外问用户；只有字段缺失或边界不清（比如"Pre-A+"这种模糊说法、
-或估值区间刚好跨在 2 亿元上下）时才需要人工确认：
+或估值区间刚好跨在 3 亿元上下）时才需要人工确认：
 
-> 这个项目属于早期轮次，但阶段/估值材料里不够明确——是按 2 亿元以内的早期项目评估法
+> 这个项目属于早期轮次，但阶段/估值材料里不够明确——是按 3 亿元以内的早期项目评估法
 > （红杉方法），还是按常规成长期研判+估值流程走？
 
 日志：
@@ -111,7 +119,7 @@ python scripts/audit_log.py append <project_dir> --actor user \
 "天使/Pre-A"那档通用权重、然后直接跳过估值（因为 `hardtech-preipo-valuation` 明确是
 Pre-IPO 前 12-24 个月专属，套不上早期项目）。这意味着早期项目此前压根拿不到任何入场
 估值判断，只有定性研判。`sequoia-seed-tech-startup-investment-evaluator` 补上了这一块——
-它是专门针对种子/天使/Pre-A、2 亿元以内标的设计的完整方法论（创始人七维打分 →
+它是专门针对种子/天使/Pre-A、3 亿元以内标的设计的完整方法论（创始人七维打分 →
 STRONG_YES/PROCEED_TO_VOTE/REJECT → "人事匹配估值法"给入场估值区间/持股比例/条款建议 →
 10x 反向检验），走 B 路径的项目不再是"只研判不估值"，而是拿到一份完整的研判+估值结论。
 
